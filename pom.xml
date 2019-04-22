@@ -12,6 +12,7 @@
     <modules>
         <module>yugong-core</module>
         <module>yugong-exe</module>
+        <module>yugong-it</module>
     </modules>
 
     <properties>
