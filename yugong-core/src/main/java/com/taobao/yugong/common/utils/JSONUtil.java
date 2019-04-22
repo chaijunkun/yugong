@@ -44,8 +44,8 @@ public enum JSONUtil {
 		SimpleModule module = new SimpleModule();
 		//module.addSerializer(String.class, new StringUnicodeSerializer());
 		this.objectMapper.registerModule(module);
-		//设置null值不参与序列化(字段不被显示)
-		this.objectMapper.setSerializationInclusion(Include.NON_NULL);
+		//设置null值参与序列化(字段显示为空数组或空对象)
+		this.objectMapper.setSerializationInclusion(Include.NON_EMPTY);
 	}
 	
 	/**
