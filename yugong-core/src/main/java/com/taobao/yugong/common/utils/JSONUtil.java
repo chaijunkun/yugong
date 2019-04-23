@@ -11,13 +11,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.math.BigDecimal;
 
 public enum JSONUtil {
 	/**
@@ -48,9 +46,7 @@ public enum JSONUtil {
 		typeResolverBuilder.typeProperty("@type");
 		objectMapper.setDefaultTyping(typeResolverBuilder);
 		//使Jackson JSON支持Unicode编码非ASCII字符
-		SimpleModule module = new SimpleModule();
-		//module.addSerializer(String.class, new StringUnicodeSerializer());
-		this.objectMapper.registerModule(module);
+		//this.objectMapper.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true);
 		//设置null值参与序列化(字段显示为空数组或空对象)
 		this.objectMapper.setSerializationInclusion(Include.NON_EMPTY);
 	}
