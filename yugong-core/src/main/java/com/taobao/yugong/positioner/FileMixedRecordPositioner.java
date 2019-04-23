@@ -1,9 +1,9 @@
 package com.taobao.yugong.positioner;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.taobao.yugong.common.model.position.IdPosition;
 import com.taobao.yugong.common.model.position.Position;
+import com.taobao.yugong.common.utils.JSONSerException;
+import com.taobao.yugong.common.utils.JSONUtil;
 import com.taobao.yugong.exception.YuGongException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
@@ -109,11 +109,12 @@ public class FileMixedRecordPositioner extends MemoryRecordPositioner implements
       if(position instanceof IdPosition){
           ((IdPosition) position).setUpdateTimeString(DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
       }
-      String json = JSON.toJSONString(position,
-          SerializerFeature.WriteClassName,
-          SerializerFeature.WriteNullListAsEmpty);
+
       try {
+        String json = JSONUtil.toJSON(position);
           FileUtils.writeStringToFile(dataFile, json);
+      } catch (JSONSerException e) {
+        throw new YuGongException(e);
       } catch (IOException e) {
         throw new YuGongException(e);
       }
