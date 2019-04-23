@@ -1,6 +1,7 @@
 package com.taobao.yugong.common.utils;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -40,6 +41,12 @@ public enum JSONUtil {
 		this.objectMapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
 		//未知字段在反序列化时忽略
 		this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		//在json中标注类型，以便多态情况下反序列化能还原当时的类型
+		ObjectMapper.DefaultTypeResolverBuilder typeResolverBuilder = new ObjectMapper.DefaultTypeResolverBuilder(ObjectMapper.DefaultTyping.NON_FINAL);
+		typeResolverBuilder.init(JsonTypeInfo.Id.CLASS,null);
+		typeResolverBuilder.inclusion(JsonTypeInfo.As.PROPERTY);
+		typeResolverBuilder.typeProperty("@type");
+		objectMapper.setDefaultTyping(typeResolverBuilder);
 		//使Jackson JSON支持Unicode编码非ASCII字符
 		SimpleModule module = new SimpleModule();
 		//module.addSerializer(String.class, new StringUnicodeSerializer());
