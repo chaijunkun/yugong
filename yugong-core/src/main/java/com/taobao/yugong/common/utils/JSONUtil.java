@@ -1,5 +1,6 @@
 package com.taobao.yugong.common.utils;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonGenerationException;
@@ -16,6 +17,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.text.SimpleDateFormat;
 
 public enum JSONUtil {
 	/**
@@ -47,6 +49,8 @@ public enum JSONUtil {
 		objectMapper.setDefaultTyping(typeResolverBuilder);
 		//使Jackson JSON支持Unicode编码非ASCII字符
 		//this.objectMapper.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true);
+		//设置全局日期格式
+		this.objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
 		//设置null值参与序列化(字段显示为空数组或空对象)
 		this.objectMapper.setSerializationInclusion(Include.NON_EMPTY);
 	}
