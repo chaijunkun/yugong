@@ -2,22 +2,23 @@ package com.taobao.yugong.common.lifecycle;
 
 /**
  * 对应的lifecycle控制接口
- *
  * @author agapple 2013-9-12 下午2:19:56
  */
 public interface YuGongLifeCycle {
 
-  public void start();
+    void start();
 
-  public void stop();
+    void stop();
 
-  /**
-   * 异常stop的机制
-   */
-  public void abort(String why, Throwable e);
+    /**
+     * 异常stop的机制
+     * @param why
+     * @param e
+     */
+    void abort(String why, Throwable e);
 
-  public boolean isStart();
+    boolean isStart();
 
-  public boolean isStop();
+    boolean isStop();
 
 }
