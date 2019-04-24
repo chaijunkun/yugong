@@ -12,7 +12,7 @@
     <artifactId>yugong-exe</artifactId>
 
     <properties>
-        <mainClass>com.taobao.yugong.YugongApp</mainClass>
+        <main.class>com.taobao.yugong.YugongApp</main.class>
     </properties>
 
     <dependencies>
@@ -29,6 +29,7 @@
             <artifactId>log4j-slf4j-impl</artifactId>
         </dependency>
     </dependencies>
+
     <build>
         <resources>
             <resource>
@@ -36,6 +37,41 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <plugins>
+            <!-- 拷贝依赖的jar包到lib目录 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeScope>runtime</includeScope>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- 打包jar文件时，配置manifest文件，加入lib包的jar依赖 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                            <mainClass>${main.class}</mainClass>
+                            <useUniqueVersions>false</useUniqueVersions>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
     <profiles>
