@@ -2,6 +2,7 @@ package com.taobao.yugong.positioner;
 
 import com.taobao.yugong.common.model.position.IdPosition;
 import com.taobao.yugong.common.model.position.Position;
+import com.taobao.yugong.common.utils.JSONDeserException;
 import com.taobao.yugong.common.utils.JSONSerException;
 import com.taobao.yugong.common.utils.JSONUtil;
 import com.taobao.yugong.exception.YuGongException;
@@ -33,117 +34,127 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class FileMixedRecordPositioner extends MemoryRecordPositioner implements RecordPositioner {
 
-  private static final Logger logger = LoggerFactory.getLogger(FileMixedRecordPositioner.class);
-  private static final Charset charset = Charset.forName("UTF-8");
-  private File dataDir;
-  private String dataFileName = "position.dat";
-  private File dataFile;
-  private ScheduledExecutorService executor;
-  private long period = 100;                                                     // 单位ms
+    private static final Logger logger = LoggerFactory.getLogger(FileMixedRecordPositioner.class);
+    private static final Charset charset = Charset.forName("UTF-8");
+    private File dataDir;
+    private String dataFileName = "position.dat";
+    private File dataFile;
+    private ScheduledExecutorService executor;
+    /**
+     * 单位ms
+     */
+    private long period = 100;
 
-  private AtomicBoolean needFlush = new AtomicBoolean(false);
-  private AtomicBoolean needReload = new AtomicBoolean(true);
+    private AtomicBoolean needFlush = new AtomicBoolean(false);
+    private AtomicBoolean needReload = new AtomicBoolean(true);
 
-  public void start() {
-    super.start();
+    @Override
+    public void start() {
+        super.start();
 
-    Assert.notNull(dataDir);
-    if (!dataDir.exists()) {
-      try {
-        FileUtils.forceMkdir(dataDir);
-      } catch (IOException e) {
-        throw new YuGongException(e);
-      }
-    }
-
-    if (!dataDir.canRead() || !dataDir.canWrite()) {
-      throw new YuGongException("dir[" + dataDir.getPath() + "] can not read/write");
-    }
-
-    dataFile = new File(dataDir, dataFileName);
-
-    executor = Executors.newScheduledThreadPool(1);
-    // 启动定时工作任务
-    executor.scheduleAtFixedRate(new Runnable() {
-
-      public void run() {
-        try {
-          // 定时将内存中的最新值刷到file中，多次变更只刷一次
-          if (needFlush.compareAndSet(true, false)) {
-            flushDataToFile(dataFile, getLatest());
-          }
-        } catch (Throwable e) {
-          // ignore
-          logger.error("period update position failed!", e);
+        Assert.notNull(dataDir);
+        if (!dataDir.exists()) {
+            try {
+                FileUtils.forceMkdir(dataDir);
+            } catch (IOException e) {
+                throw new YuGongException(e);
+            }
         }
-      }
-    }, period, period, TimeUnit.MILLISECONDS);
-  }
 
-  public void stop() {
-    super.stop();
+        if (!dataDir.canRead() || !dataDir.canWrite()) {
+            throw new YuGongException("dir[" + dataDir.getPath() + "] can not read/write");
+        }
 
-    flushDataToFile(dataFile, super.getLatest());
-    executor.shutdownNow();
-  }
+        dataFile = new File(dataDir, dataFileName);
 
-  public void persist(Position position) {
-    needFlush.set(true);
-    super.persist(position);
-  }
+        executor = Executors.newScheduledThreadPool(1);
+        // 启动定时工作任务
+        executor.scheduleAtFixedRate(new Runnable() {
 
-  public Position getLatest() {
-    if (needReload.compareAndSet(true, false)) {
-      Position position = loadDataFromFile(dataFile);
-      super.persist(position);
-      return position;
-    } else {
-      return super.getLatest();
+            @Override
+            public void run() {
+                try {
+                    // 定时将内存中的最新值刷到file中，多次变更只刷一次
+                    if (needFlush.compareAndSet(true, false)) {
+                        flushDataToFile(dataFile, getLatest());
+                    }
+                } catch (Throwable e) {
+                    // ignore
+                    logger.error("period update position failed!", e);
+                }
+            }
+        }, period, period, TimeUnit.MILLISECONDS);
     }
-  }
 
-  // ============================ helper method ======================
+    @Override
+    public void stop() {
+        super.stop();
 
-  private void flushDataToFile(File dataFile, Position position) {
-    if (position != null) {
-      if(position instanceof IdPosition){
-          ((IdPosition) position).setUpdateTimeString(DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
-      }
-
-      try {
-        String json = JSONUtil.toJSON(position);
-          FileUtils.writeStringToFile(dataFile, json);
-      } catch (JSONSerException e) {
-        throw new YuGongException(e);
-      } catch (IOException e) {
-        throw new YuGongException(e);
-      }
+        flushDataToFile(dataFile, super.getLatest());
+        executor.shutdownNow();
     }
-  }
 
-  private Position loadDataFromFile(File dataFile) {
-    try {
-      if (!dataFile.exists()) {
-        return null;
-      }
-
-      String json = FileUtils.readFileToString(dataFile, charset.name());
-      return JSON.parseObject(json, Position.class);
-    } catch (IOException e) {
-      throw new YuGongException(e);
+    @Override
+    public void persist(Position position) {
+        needFlush.set(true);
+        super.persist(position);
     }
-  }
 
-  public void setDataDir(File dataDir) {
-    this.dataDir = dataDir;
-  }
+    @Override
+    public Position getLatest() {
+        if (needReload.compareAndSet(true, false)) {
+            Position position = loadDataFromFile(dataFile);
+            super.persist(position);
+            return position;
+        } else {
+            return super.getLatest();
+        }
+    }
 
-  public void setDataFileName(String dataFileName) {
-    this.dataFileName = dataFileName;
-  }
+    // ============================ helper method ======================
 
-  public void setPeriod(long period) {
-    this.period = period;
-  }
+    private void flushDataToFile(File dataFile, Position position) {
+        if (position != null) {
+            if (position instanceof IdPosition) {
+                ((IdPosition) position).setUpdateTimeString(DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+            }
+
+            try {
+                String json = JSONUtil.toJSON(position);
+                FileUtils.writeStringToFile(dataFile, json);
+            } catch (JSONSerException e) {
+                throw new YuGongException(e);
+            } catch (IOException e) {
+                throw new YuGongException(e);
+            }
+        }
+    }
+
+    private Position loadDataFromFile(File dataFile) {
+        try {
+            if (!dataFile.exists()) {
+                return null;
+            }
+
+            String json = FileUtils.readFileToString(dataFile, charset.name());
+            return JSONUtil.fromJSON(json, Position.class);
+        } catch (IOException e) {
+            throw new YuGongException(e);
+        } catch (JSONDeserException e) {
+            throw new YuGongException(e);
+        }
+    }
+
+    public void setDataDir(File dataDir) {
+        this.dataDir = dataDir;
+    }
+
+    public void setDataFileName(String dataFileName) {
+        this.dataFileName = dataFileName;
+    }
+
+    public void setPeriod(long period) {
+        this.period = period;
+    }
 
 }
