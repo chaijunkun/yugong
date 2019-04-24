@@ -12,7 +12,7 @@
     <modules>
         <module>yugong-core</module>
         <module>yugong-exe</module>
-        <module>yugong-it</module>
+        <module>yugong-test</module>
     </modules>
 
     <properties>
