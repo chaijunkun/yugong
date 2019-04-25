@@ -10,31 +10,28 @@ import org.apache.commons.cli.Options;
  */
 public class CliOptions {
 
-    public static final String ARG_HELP = "h";
-
-    public static final String ARG_CONFIG = "c";
-
-    public static final String ARG_YAML = "y";
-
     private Option createOptionHelp(){
-        return Option.builder(ARG_HELP)
-                .desc("获取帮助信息")
+        return Option.builder(ArgDef.help.getShortName())
+                .longOpt(ArgDef.help.getLongName())
+                .desc(ArgDef.help.getDesc())
                 .build();
     }
 
     private Option createOptionConfig() {
-        return Option.builder(ARG_CONFIG)
+        return Option.builder(ArgDef.config.getShortName())
+                .longOpt(ArgDef.config.getLongName())
                 .hasArg()
-                .argName("config")
-                .desc("指定配置文件")
+                .argName(ArgDef.config.getArgVal())
+                .desc(ArgDef.config.getDesc())
                 .build();
     }
 
     private Option createOptionYaml() {
-        return Option.builder(ARG_YAML)
+        return Option.builder(ArgDef.yaml.getShortName())
+                .longOpt(ArgDef.yaml.getLongName())
                 .hasArg()
-                .argName("yaml")
-                .desc("指定yaml配置文件")
+                .argName(ArgDef.yaml.getArgVal())
+                .desc(ArgDef.yaml.getDesc())
                 .build();
     }
 
@@ -50,14 +47,11 @@ public class CliOptions {
 
     public static CliOptions getNewInstance(){
         CliOptions cliOptions = new CliOptions();
-//        OptionGroup optQueryOrModeGrp = new OptionGroup();
-//        optQueryOrModeGrp.addOption(cliOptions.createOptionMode());
-//        cliOptions.getOpts().addOptionGroup(optQueryOrModeGrp);
 
+        cliOptions.getOpts().addOption(cliOptions.createOptionHelp());
         cliOptions.getOpts().addOption(cliOptions.createOptionConfig());
         cliOptions.getOpts().addOption(cliOptions.createOptionYaml());
 
-        cliOptions.getOpts().addOption(cliOptions.createOptionHelp());
         return cliOptions;
     }
 

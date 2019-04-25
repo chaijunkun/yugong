@@ -1,6 +1,7 @@
 package com.taobao.yugong;
 
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import com.taobao.yugong.cli.ArgDef;
 import com.taobao.yugong.cli.CliOptions;
 import com.taobao.yugong.common.version.VersionInfo;
 import com.taobao.yugong.conf.YugongConfiguration;
@@ -30,6 +31,12 @@ public class YugongApp {
         helpFormatter.printHelp("startup_cmd", opts, true);
     }
 
+    public static void showHelpWithExitCode(Options opts, int code) {
+        showHelp(opts);
+        System.exit(code);
+    }
+
+
     public static void main(String[] args) {
         Options opts = CliOptions.getNewInstance().getOpts();
         try {
@@ -37,52 +44,48 @@ public class YugongApp {
             CommandLine cl = parser.parse(opts, args);
             do {
                 if (ArrayUtils.isEmpty(args)) {
-                    showHelp(opts);
-                    break;
+                    throw new IllegalArgumentException("please specific essential args, or -h to get help information");
                 }
-                if (cl.hasOption(CliOptions.ARG_HELP)) {
+                if (cl.hasOption(ArgDef.help.getShortName())) {
                     showHelp(opts);
                     break;
                 }
 
+                // 加载config
                 PropertiesConfiguration config = new PropertiesConfiguration();
-                try {
-                    if (cl.hasOption(CliOptions.ARG_CONFIG)) {
-                        config.load(new File(cl.getOptionValue(CliOptions.ARG_CONFIG)));
-                    } else {
-                        throw new ConfigurationException(String.format("no required parameter:%s", CliOptions.ARG_CONFIG));
-                    }
-
-                } catch (ConfigurationException e) {
-                    log.error("Configuration load error: {}", cl.getOptionValue(CliOptions.ARG_CONFIG));
-                    System.exit(0);
-                    return;
+                if (cl.hasOption(ArgDef.config.getShortName())) {
+                    config.load(new File(cl.getOptionValue(ArgDef.config.getShortName())));
+                } else {
+                    throw new ConfigurationException(String.format("no required parameter:%s", ArgDef.config.getShortName()));
                 }
+
+                // 加载 yaml
                 YugongConfiguration yugongConfiguration;
-                try {
-                    if (cl.hasOption(CliOptions.ARG_YAML)) {
-                        yugongConfiguration = yamlMapper.readValue(new File(cl.getOptionValue(CliOptions.ARG_YAML)),
-                                YugongConfiguration.class);
-                    } else {
-                        throw new IOException(String.format("no required parameter:%s", CliOptions.ARG_YAML));
-                    }
-                } catch (IOException e) {
-                    log.error("YAML configuration load error: {}", cl.getOptionValue(CliOptions.ARG_YAML));
-                    System.exit(0);
-                    return;
+                if (cl.hasOption(ArgDef.yaml.getShortName())) {
+                    yugongConfiguration = yamlMapper.readValue(new File(cl.getOptionValue(ArgDef.yaml.getShortName())), YugongConfiguration.class);
+                } else {
+                    throw new IOException(String.format("no required parameter:%s", ArgDef.yaml.getShortName()));
                 }
 
                 try {
                     run(config, yugongConfiguration);
                 } catch (Throwable e) {
-                    log.error("## Something goes wrong when starting up the YuGong:\n{}",
-                            ExceptionUtils.getFullStackTrace(e));
+                    log.error("## Something goes wrong when starting up the YuGong:\n{}", ExceptionUtils.getFullStackTrace(e));
                 }
 
             } while (false);
         } catch (ParseException parseExp) {
             log.error("命令行错误:{}", parseExp.getMessage());
-            showHelp(opts);
+            showHelpWithExitCode(opts, 500);
+        } catch (ConfigurationException e) {
+            log.error("Configuration load error", e);
+            showHelpWithExitCode(opts, 100);
+        } catch (IOException e) {
+            log.error("YAML configuration load error", e);
+            showHelpWithExitCode(opts, 200);
+        } catch (IllegalArgumentException e) {
+            log.error("argument error", e.getMessage());
+            showHelpWithExitCode(opts, 1);
         }
 
     }
