@@ -84,7 +84,7 @@ public class YugongApp {
             log.error("YAML configuration load error", e);
             showHelpWithExitCode(opts, 200);
         } catch (IllegalArgumentException e) {
-            log.error("argument error", e.getMessage());
+            log.error("argument error, {}", e.getMessage());
             showHelpWithExitCode(opts, 1);
         }
 
