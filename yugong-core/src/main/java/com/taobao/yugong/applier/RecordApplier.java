@@ -14,6 +14,6 @@ import java.util.List;
  */
 public interface RecordApplier extends YuGongLifeCycle {
 
-  public void apply(List<Record> records) throws YuGongException;
+  void apply(List<Record> records) throws YuGongException;
 
 }

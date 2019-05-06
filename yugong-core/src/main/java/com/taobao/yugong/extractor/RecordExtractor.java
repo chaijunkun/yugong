@@ -19,15 +19,15 @@ public interface RecordExtractor extends YuGongLifeCycle {
   /**
    * 获取增量数据
    */
-  public List<Record> extract() throws YuGongException;
+  List<Record> extract() throws YuGongException;
 
   /**
    * @return 当前extractor的状态,{@linkplain ExtractStatus}
    */
-  public ExtractStatus status();
+  ExtractStatus status();
 
   /**
    * 反馈数据处理成功
    */
-  public Position ack(List<Record> records) throws YuGongException;
+  Position ack(List<Record> records) throws YuGongException;
 }
