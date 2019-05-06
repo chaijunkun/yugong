@@ -1,9 +1,6 @@
 package com.taobao.yugong.common.model;
 
-import com.taobao.yugong.common.utils.YuGongToStringStyle;
-
-import lombok.*;
-import org.apache.commons.lang.builder.ToStringBuilder;
+import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Properties;
