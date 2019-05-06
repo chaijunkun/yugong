@@ -118,16 +118,8 @@ public class YuGongController extends AbstractYuGongLifeCycle {
       throw new YuGongException("yugong.table.mode should not be empty");
     }
     this.runMode = RunMode.valueOf(mode);
-    this.sourceDbType = DbType.valueOf(StringUtils.upperCase(
-        config.getString("yugong.database.source.type")));
-    if (null == this.sourceDbType) {
-      this.sourceDbType = DbType.UNKNOWN;
-    }
-    this.targetDbType = DbType.valueOf(StringUtils.upperCase(
-        config.getString("yugong.database.target.type")));
-    if (null == this.targetDbType) {
-      this.targetDbType = DbType.UNKNOWN;
-    }
+    this.sourceDbType = DbType.getTypeIgnoreCase(config.getString("yugong.database.source.type"));
+    this.targetDbType = DbType.getTypeIgnoreCase(config.getString("yugong.database.target.type"));
     this.translatorDir = new File(config.getString("yugong.translator.dir", "../conf/translator"));
     this.alarmService = initAlarmService();
     onceFull = config.getBoolean("yugong.extractor.once", false);
@@ -627,7 +619,7 @@ public class YuGongController extends AbstractYuGongLifeCycle {
   private DataSource initDataSource(String type) {
     String username = config.getString("yugong.database." + type + ".username");
     String password = config.getString("yugong.database." + type + ".password");
-    DbType dbType = DbType.valueOf(config.getString("yugong.database." + type + ".type"));
+    DbType dbType = DbType.getTypeIgnoreCase(config.getString("yugong.database." + type + ".type"));
     String url = config.getString("yugong.database." + type + ".url");
     String encode = config.getString("yugong.database." + type + ".encode");
     String poolSize = config.getString("yugong.database." + type + ".poolSize");
