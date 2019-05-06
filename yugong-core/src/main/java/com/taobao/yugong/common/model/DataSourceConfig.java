@@ -14,8 +14,8 @@ import java.util.Properties;
  * @author agapple 2011-9-2 上午11:28:21
  */
 @Data
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class DataSourceConfig implements Serializable {
 
   private static final long serialVersionUID = -7653632703273608373L;
