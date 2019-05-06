@@ -21,6 +21,7 @@ public class AbstractDataTranslator implements DataTranslator {
   /**
    * 转换schemaName,如果返回null,则以每条数据Record的转义为准
    */
+  @Override
   public String translatorSchema() {
     return null;
   }
@@ -28,14 +29,17 @@ public class AbstractDataTranslator implements DataTranslator {
   /**
    * 转换tableName,如果返回null,则以每条数据Record的转义为准
    */
+  @Override
   public String translatorTable() {
     return null;
   }
 
+  @Override
   public boolean translator(Record record) {
     return true;
   }
 
+  @Override
   public List<Record> translator(List<Record> records) {
     List<Record> result = Lists.newArrayList();
     for (Record record : records) {
