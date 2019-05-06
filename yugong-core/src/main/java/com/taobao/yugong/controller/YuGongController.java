@@ -120,8 +120,14 @@ public class YuGongController extends AbstractYuGongLifeCycle {
     this.runMode = RunMode.valueOf(mode);
     this.sourceDbType = DbType.valueOf(StringUtils.upperCase(
         config.getString("yugong.database.source.type")));
+    if (null == this.sourceDbType) {
+      this.sourceDbType = DbType.UNKNOWN;
+    }
     this.targetDbType = DbType.valueOf(StringUtils.upperCase(
         config.getString("yugong.database.target.type")));
+    if (null == this.targetDbType) {
+      this.targetDbType = DbType.UNKNOWN;
+    }
     this.translatorDir = new File(config.getString("yugong.translator.dir", "../conf/translator"));
     this.alarmService = initAlarmService();
     onceFull = config.getBoolean("yugong.extractor.once", false);
@@ -236,16 +242,12 @@ public class YuGongController extends AbstractYuGongLifeCycle {
     logger.info("## prepare start tables[{}] with concurrent[{}]", instances.size(), threadSize);
     int progressPrintInterval = config.getInt("yugong.progress.print.interval", 1);
     schedule = Executors.newScheduledThreadPool(2);
-    schedule.scheduleWithFixedDelay(new Runnable() {
-
-      @Override
-      public void run() {
+    schedule.scheduleWithFixedDelay(() -> {
         try {
           progressTracer.print(true);
         } catch (Throwable e) {
           logger.error("print progress failed", e);
         }
-      }
     }, progressPrintInterval, progressPrintInterval, TimeUnit.MINUTES);
     schedule.execute(() -> {
       while (true) {

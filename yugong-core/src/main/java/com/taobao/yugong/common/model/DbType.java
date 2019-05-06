@@ -8,7 +8,9 @@ public enum DbType {
   MYSQL("com.mysql.jdbc.Driver"),
   DRDS("com.mysql.jdbc.Driver"),
   ORACLE("oracle.jdbc.driver.OracleDriver"),
-  SQL_SERVER("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+  SQL_SERVER("com.microsoft.sqlserver.jdbc.SQLServerDriver"),
+  /** 未知类型 */
+  UNKNOWN("");
 
   private String driver;
 
