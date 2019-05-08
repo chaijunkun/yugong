@@ -33,6 +33,7 @@ import com.taobao.yugong.translator.core.OracleIncreamentDataTranslator;
 import lombok.Getter;
 import lombok.Setter;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,9 +51,9 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author agapple 2013-9-17 下午3:21:01
  */
+@Slf4j
 public class YuGongInstance extends AbstractYuGongLifeCycle {
 
-    private final Logger logger = LoggerFactory.getLogger(YuGongInstance.class);
     @Getter
     @Setter
     private YuGongContext context;
@@ -193,9 +194,9 @@ public class YuGongInstance extends AbstractYuGongLifeCycle {
                         for (int i = 0; i < retryTimes; i++) {
                             MDC.remove(YuGongConstants.MDC_TABLE_SHIT_KEY);
                             if (i > 0) {
-                                logger.info("table[{}] is start , retrying ", context.getTableMeta().getFullName());
+                                log.info("table[{}] is start , retrying ", context.getTableMeta().getFullName());
                             } else {
-                                logger.info("table[{}] is start", context.getTableMeta().getFullName());
+                                log.info("table[{}] is start", context.getTableMeta().getFullName());
                             }
 
                             try {
@@ -215,14 +216,14 @@ public class YuGongInstance extends AbstractYuGongLifeCycle {
 
                         if (exception == null) {
                             // 记录到总文件下
-                            logger.info("table[{}] is end", context.getTableMeta().getFullName());
+                            log.info("table[{}] is end", context.getTableMeta().getFullName());
                         } else if (ExceptionUtils.getRootCause(exception) instanceof InterruptedException) {
                             progressTracer.update(context.getTableMeta().getFullName(), ProgressStatus.FAILED);
-                            logger.info("table[{}] is interrpt ,current status:{} !", context.getTableMeta()
+                            log.info("table[{}] is interrpt ,current status:{} !", context.getTableMeta()
                                     .getFullName(), extractor.status());
                         } else {
                             progressTracer.update(context.getTableMeta().getFullName(), ProgressStatus.FAILED);
-                            logger.info("table[{}] is error , current status:{} !", context.getTableMeta()
+                            log.info("table[{}] is error , current status:{} !", context.getTableMeta()
                                     .getFullName(), extractor.status());
                         }
                     } finally {
@@ -318,7 +319,7 @@ public class YuGongInstance extends AbstractYuGongLifeCycle {
                             }
                         } while (status != ExtractStatus.TABLE_END);
 
-                        logger.info("table[{}] is end by {}", context.getTableMeta().getFullName(), status);
+                        log.info("table[{}] is end by {}", context.getTableMeta().getFullName(), status);
                         statAggregation.print();
                     } catch (InterruptedException e) {
                         // 正常退出，不发送报警
@@ -351,13 +352,13 @@ public class YuGongInstance extends AbstractYuGongLifeCycle {
 
                 private boolean processException(Throwable e, int i) {
                     if (!(ExceptionUtils.getRootCause(e) instanceof InterruptedException)) {
-                        logger.error("retry {} ,something error happened. caused by {}",
+                        log.error("retry {} ,something error happened. caused by {}",
                                 (i + 1),
                                 ExceptionUtils.getFullStackTrace(e));
                         try {
                             alarmService.sendAlarm(new AlarmMessage(ExceptionUtils.getFullStackTrace(e), alarmReceiver));
                         } catch (Throwable e1) {
-                            logger.error("send alarm failed. ", e1);
+                            log.error("send alarm failed. ", e1);
                         }
 
                         try {
@@ -377,11 +378,11 @@ public class YuGongInstance extends AbstractYuGongLifeCycle {
 
             });
 
-            worker.setUncaughtExceptionHandler(new YuGongUncaughtExceptionHandler(logger));
+            worker.setUncaughtExceptionHandler(new YuGongUncaughtExceptionHandler(log));
             worker.setName(this.getClass().getSimpleName() + "-" + context.getTableMeta().getFullName());
             worker.start();
 
-            logger.info("table[{}] start successful. extractor:{} , applier:{}, translator:{}", new Object[]{
+            log.info("table[{}] start successful. extractor:{} , applier:{}, translator:{}", new Object[]{
                     context.getTableMeta().getFullName(), extractor.getClass().getName(), applier.getClass().getName(),
                     translators != null ? translators : "NULL"});
         } catch (InterruptedException e) {
@@ -394,7 +395,7 @@ public class YuGongInstance extends AbstractYuGongLifeCycle {
             progressTracer.update(context.getTableMeta().getFullName(), ProgressStatus.FAILED);
             exception = new YuGongException(e);
             mutex.countDown();
-            logger.error("table[{}] start failed caused by {}",
+            log.error("table[{}] start failed caused by {}",
                     context.getTableMeta().getFullName(),
                     ExceptionUtils.getFullStackTrace(e));
             tableController.release(this); // 释放下
@@ -442,7 +443,7 @@ public class YuGongInstance extends AbstractYuGongLifeCycle {
         executor.shutdownNow();
 
         exception = null;
-        logger.info("table[{}] stop successful. ", context.getTableMeta().getFullName());
+        log.info("table[{}] stop successful. ", context.getTableMeta().getFullName());
     }
 
     private void tpsControl(List<Record> result, long start, long end, long tps) throws InterruptedException {
