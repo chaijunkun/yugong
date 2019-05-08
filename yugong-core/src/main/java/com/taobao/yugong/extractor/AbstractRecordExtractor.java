@@ -18,18 +18,19 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractRecordExtractor extends AbstractYuGongLifeCycle
     implements RecordExtractor {
 
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Getter
   @Setter
   protected volatile ExtractStatus status = ExtractStatus.NORMAL;
+
+  @Getter
+  @Setter
+  protected volatile ProgressTracer tracer;
 
   @Override
   public ExtractStatus status() {
     return status;
   }
 
-  @Getter
-  @Setter
-  protected volatile ProgressTracer tracer;
+
 }
