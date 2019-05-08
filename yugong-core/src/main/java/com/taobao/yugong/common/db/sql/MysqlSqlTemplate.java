@@ -20,6 +20,7 @@ public class MysqlSqlTemplate extends SqlTemplate {
     return sql.toString().intern();
   }
 
+  @Override
   public String getInsertSql(String schemaName, String tableName, String[] compositeColumns, String[] colNames) {
     StringBuilder sql = new StringBuilder();
     sql.append("insert into ").append(makeFullName(schemaName, tableName)).append("(");
@@ -39,6 +40,7 @@ public class MysqlSqlTemplate extends SqlTemplate {
     return sql.toString().intern();
   }
 
+  @Override
   public String getUpdateSql(String schemaName, String tableName, String[] compositeColumns, String[] colNames) {
     StringBuilder sql = new StringBuilder();
     String[] allColumns = buildAllColumns(compositeColumns, colNames);
@@ -130,10 +132,12 @@ public class MysqlSqlTemplate extends SqlTemplate {
     return super.getInsertSql(schemaName, tableName, pkNames, columnNames);
   }
 
+  @Override
   protected String getColumnName(String columName) {
     return "`" + columName + "`";
   }
 
+  @Override
   protected String getColumnName(ColumnMeta column) {
     return "`" + column.getName() + "`";
   }

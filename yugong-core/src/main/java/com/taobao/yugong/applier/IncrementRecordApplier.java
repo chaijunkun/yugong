@@ -58,6 +58,7 @@ public class IncrementRecordApplier extends AbstractRecordApplier {
     this.context = context;
   }
 
+  @Override
   public void start() {
     super.start();
     sourceDbType = YuGongUtils.judgeDbType(context.getSourceDs());
@@ -67,10 +68,12 @@ public class IncrementRecordApplier extends AbstractRecordApplier {
     deleteSqlCache = MigrateMap.makeMap();
   }
 
+  @Override
   public void stop() {
     super.stop();
   }
 
+  @Override
   public void apply(List<Record> records) throws YuGongException {
     // no one,just return
     if (YuGongUtils.isEmpty(records)) {

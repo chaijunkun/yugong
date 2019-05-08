@@ -17,6 +17,6 @@ public interface AlarmService {
    * 2. receiveKey : 报警接收者信息
    * </pre>
    */
-  public void sendAlarm(AlarmMessage data);
+  void sendAlarm(AlarmMessage data);
 
 }

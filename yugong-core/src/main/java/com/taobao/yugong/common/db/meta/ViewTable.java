@@ -1,5 +1,8 @@
 package com.taobao.yugong.common.db.meta;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.List;
 
 /**
@@ -10,40 +13,31 @@ import java.util.List;
  */
 public class ViewTable extends Table {
 
-  private String viewName;       // 视图表名
-  private List<ColumnMeta> viewColumns;    // 视图字段
-  private String primaryKeyIndex; // 原始表主键的index信息
+    /**
+     * 视图表名
+     */
+    @Getter
+    @Setter
+    private String viewName;
+    /**
+     * 视图字段
+     */
+    @Getter
+    @Setter
+    private List<ColumnMeta> viewColumns;
+    /**
+     * 原始表主键的index信息
+     */
+    @Getter
+    @Setter
+    private String primaryKeyIndex;
 
-  public ViewTable(String type, String schema, String name) {
-    super(type, schema, name);
-  }
+    public ViewTable(String type, String schema, String name) {
+        super(type, schema, name);
+    }
 
-  public ViewTable(String type, String schema, String name, List<ColumnMeta> primaryKeys, List<ColumnMeta> columns) {
-    super(type, schema, name, primaryKeys, columns);
-  }
-
-  public String getViewName() {
-    return viewName;
-  }
-
-  public void setViewName(String viewName) {
-    this.viewName = viewName;
-  }
-
-  public List<ColumnMeta> getViewColumns() {
-    return viewColumns;
-  }
-
-  public void setViewColumns(List<ColumnMeta> viewColumns) {
-    this.viewColumns = viewColumns;
-  }
-
-  public String getPrimaryKeyIndex() {
-    return primaryKeyIndex;
-  }
-
-  public void setPrimaryKeyIndex(String primaryKeyIndex) {
-    this.primaryKeyIndex = primaryKeyIndex;
-  }
+    public ViewTable(String type, String schema, String name, List<ColumnMeta> primaryKeys, List<ColumnMeta> columns) {
+        super(type, schema, name, primaryKeys, columns);
+    }
 
 }

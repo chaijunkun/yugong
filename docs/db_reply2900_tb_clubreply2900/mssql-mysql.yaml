@@ -1,0 +1,22 @@
+databases:
+  source:
+    schema:
+  target:
+    schema:
+table:
+  a: ClubReply2900
+  b: ClubReply
+extractor:
+  a: ClubReply2900
+  b: ClubReply
+appiler:
+  a: ClubReply2900
+  b: ClubReply
+translators:
+  table:
+
+  record:
+    ClubReply2900:
+      - class: com.taobao.yugong.translator.NameStyleDataTranslator
+        properties:
+          table_to: ClubReply_nokey
