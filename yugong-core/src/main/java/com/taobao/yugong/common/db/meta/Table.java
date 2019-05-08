@@ -1,11 +1,9 @@
 package com.taobao.yugong.common.db.meta;
 
 import com.google.common.collect.Lists;
-import com.taobao.yugong.common.utils.YuGongToStringStyle;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.builder.ToStringBuilder;
 
 import java.io.Serializable;
 import java.util.List;
