@@ -10,32 +10,37 @@ import java.text.MessageFormat;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
+/**
+ * MySQL全量提取
+ *
+ * @author dijingchao
+ */
 public class MysqlFullRecordExtractor extends AbstractFullRecordExtractor {
 
-  private static final String MIN_PK_FORMAT = "select min({0}) from {1}.{2}";
-  private static final String DEFALT_EXTRACT_SQL_FORMAT =
-      "select {0} from {1}.{2} where {3} > ? order by {3} asc limit ?;";
-  private static Map<String, Integer> PARAMETER_INDEX_MAP = ImmutableMap.of("id", 1, "limit", 2);
+    private static final String MIN_PK_FORMAT = "select min({0}) from {1}.{2}";
+    private static final String DEFALT_EXTRACT_SQL_FORMAT =
+            "select {0} from {1}.{2} where {3} > ? order by {3} asc limit ?;";
+    private static Map<String, Integer> PARAMETER_INDEX_MAP = ImmutableMap.of("id", 1, "limit", 2);
 
-  public MysqlFullRecordExtractor(YuGongContext context) {
-    this.context = context;
-  }
-
-  @Override
-  public void init() {
-    super.init();
-    String primaryKey = context.getTableMeta().getPrimaryKeys().get(0).getName();
-    String schemaName = context.getTableMeta().getSchema();
-    String tableName = context.getTableMeta().getName();
-    this.getMinPkSql = MessageFormat.format(MIN_PK_FORMAT, primaryKey, schemaName, tableName);
-    this.parameterIndexMap = PARAMETER_INDEX_MAP;
-
-    if (Strings.isNullOrEmpty(extractSql)) {
-      String colStr = SqlTemplates.COMMON.makeColumn(context.getTableMeta().getColumnsWithPrimary());
-      this.extractSql = MessageFormat.format(DEFALT_EXTRACT_SQL_FORMAT, colStr, schemaName,
-          tableName, primaryKey);
+    public MysqlFullRecordExtractor(YuGongContext context) {
+        this.context = context;
     }
-    queue = new LinkedBlockingQueue<>(context.getOnceCrawNum() * 2);
-  }
+
+    @Override
+    public void init() {
+        super.init();
+        String primaryKey = context.getTableMeta().getPrimaryKeys().get(0).getName();
+        String schemaName = context.getTableMeta().getSchema();
+        String tableName = context.getTableMeta().getName();
+        this.getMinPkSql = MessageFormat.format(MIN_PK_FORMAT, primaryKey, schemaName, tableName);
+        this.parameterIndexMap = PARAMETER_INDEX_MAP;
+
+        if (Strings.isNullOrEmpty(extractSql)) {
+            String colStr = SqlTemplates.COMMON.makeColumn(context.getTableMeta().getColumnsWithPrimary());
+            this.extractSql = MessageFormat.format(DEFALT_EXTRACT_SQL_FORMAT, colStr, schemaName,
+                    tableName, primaryKey);
+        }
+        queue = new LinkedBlockingQueue<>(context.getOnceCrawNum() * 2);
+    }
 
 }
