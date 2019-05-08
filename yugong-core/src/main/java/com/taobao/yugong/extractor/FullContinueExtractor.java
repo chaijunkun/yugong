@@ -15,6 +15,7 @@ import com.taobao.yugong.exception.YuGongException;
 
 import lombok.Getter;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCallback;
@@ -29,6 +30,7 @@ import java.util.concurrent.BlockingQueue;
  * 全量同步继续执行的提取器
  * @author dijingchao
  */
+@Slf4j
 public class FullContinueExtractor extends AbstractYuGongLifeCycle implements Runnable {
 
     private AbstractFullRecordExtractor fullRecordExtractor;
@@ -63,7 +65,7 @@ public class FullContinueExtractor extends AbstractYuGongLifeCycle implements Ru
             id = getMinId();
         }
 
-        logger.info(context.getTableMeta().getFullName() + " start postion:" + id);
+        log.info(context.getTableMeta().getFullName() + " start postion:" + id);
     }
 
     private Object getMinId() {

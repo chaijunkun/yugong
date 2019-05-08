@@ -20,6 +20,7 @@ import com.taobao.yugong.common.utils.SqlUtils;
 import com.taobao.yugong.exception.YuGongException;
 import com.taobao.yugong.extractor.sqlserver.AbstractSqlServerExtractor;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import redis.clients.jedis.Jedis;
@@ -37,148 +38,151 @@ import java.util.stream.IntStream;
 
 /**
  * Not thread safe
+ * @author dijingchao
  */
+@Slf4j
 public class MysqlCanalRedisExtractor extends AbstractSqlServerExtractor {
 
-  private final String schemaName;
-  private final String tableName;
-  private Table tableMeta;
-  private List<ColumnMeta> primaryKeyMetas;
-  private List<ColumnMeta> columnsMetas;
-  private YuGongContext context;
-  private Jedis redisClient;
-  private int batchQuery;
-  private int noUpdateSleepTimeSecond = 2;
+    private final String schemaName;
+    private final String tableName;
+    private Table tableMeta;
+    private List<ColumnMeta> primaryKeyMetas;
+    private List<ColumnMeta> columnsMetas;
+    private YuGongContext context;
+    private Jedis redisClient;
+    private int batchQuery;
+    private int noUpdateSleepTimeSecond = 2;
 
-  public MysqlCanalRedisExtractor(YuGongContext context,
-      String redisServerIp, int redisServerPort) {
-    this.context = context;
-    this.schemaName = context.getTableMeta().getSchema();
-    this.tableName = context.getTableMeta().getName();
-    this.redisClient = new Jedis(redisServerIp, redisServerPort);
-  }
-
-  @Override
-  public void start() {
-    super.start();
-    tableMeta = context.getTableMeta();
-    primaryKeyMetas = tableMeta.getPrimaryKeys();
-    columnsMetas = tableMeta.getColumns();
-    tracer.update(context.getTableMeta().getFullName(), ProgressStatus.INCING);
-
-    redisClient.connect();
-  }
-
-  @Override
-  public List<Record> extract() {
-    JdbcTemplate jdbcTemplate = new JdbcTemplate(context.getSourceDs());
-    List<IncrementRecord> records;
-    records = fetchCanalRecord(primaryKeyMetas, columnsMetas);
-    if (records.isEmpty()) {
-      setStatus(ExtractStatus.CATCH_UP);
-      tracer.update(context.getTableMeta().getFullName(), ProgressStatus.SUCCESS);
-      try {
-        Thread.sleep(noUpdateSleepTimeSecond * 1000);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();// 传递下去
-      }
-    }
-    logger.info("size: {}, processed ids: {}", records.size(), Joiner.on(",").join(records.stream()
-        .map(x -> Joiner.on("+").join(x.getPrimaryKeys().stream()
-            .map(x1 -> x1.getValue().toString()).collect(Collectors.toList()))).collect(Collectors.toList())));
-
-    return (List<Record>) (List<? extends Record>) records;
-  }
-
-  private List<IncrementRecord> fetchCanalRecord(List<ColumnMeta> primaryKeyMetas,
-      List<ColumnMeta> columnsMetas) {
-    Pipeline pipelined = redisClient.pipelined();
-    List<Response<byte[]>> entryStringListResponses = Lists.newArrayList();
-    batchQuery = 100;
-    IntStream.range(0, batchQuery).forEach(x ->
-        entryStringListResponses.add(pipelined.lpop((this.schemaName + "." + this.tableName).getBytes())));
-    pipelined.sync();
-    List<byte[]> rowDataStrings = entryStringListResponses.stream().map(Response::get)
-        .filter(Objects::nonNull).collect(Collectors.toList());
-    if (rowDataStrings.isEmpty()) {
-      return ImmutableList.of();
+    public MysqlCanalRedisExtractor(YuGongContext context,
+                                    String redisServerIp, int redisServerPort) {
+        this.context = context;
+        this.schemaName = context.getTableMeta().getSchema();
+        this.tableName = context.getTableMeta().getName();
+        this.redisClient = new Jedis(redisServerIp, redisServerPort);
     }
 
-    return rowDataStrings.stream().map(x -> {
-      try {
-        return CanalEntry.Entry.parseFrom(ByteString.copyFrom(x));
-      } catch (InvalidProtocolBufferException e) {
-        throw new YuGongException(e);
-      }})
-        .map((CanalEntry.Entry entry) -> {
-          CanalEntry.RowChange rowChange;
-          try {
-            rowChange = CanalEntry.RowChange.parseFrom(entry.getStoreValue());
-          } catch (InvalidProtocolBufferException e) {
-            logger.error("parse entry failed, entry offset: {}", entry.getHeader().getLogfileOffset());
-            throw new YuGongException("parse entry failed, stopped");
-          }
-          List<CanalEntry.RowData> rows = rowChange.getRowDatasList();
-          // one entry contains multi row changes
-          return rows.stream().map(rowData -> {
-            List<ColumnValue> columnValues = Lists.newArrayList();
-            List<ColumnValue> primaryKeys = Lists.newArrayList();
-            List<CanalEntry.Column> effectsColumns;
-            if (entry.getHeader().getEventType() == CanalEntry.EventType.INSERT ||
-                entry.getHeader().getEventType() == CanalEntry.EventType.UPDATE) {
-              effectsColumns = rowData.getAfterColumnsList();
-            } else { // DELETE
-              effectsColumns = rowData.getBeforeColumnsList();
+    @Override
+    public void start() {
+        super.start();
+        tableMeta = context.getTableMeta();
+        primaryKeyMetas = tableMeta.getPrimaryKeys();
+        columnsMetas = tableMeta.getColumns();
+        tracer.update(context.getTableMeta().getFullName(), ProgressStatus.INCING);
+
+        redisClient.connect();
+    }
+
+    @Override
+    public List<Record> extract() {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(context.getSourceDs());
+        List<IncrementRecord> records;
+        records = fetchCanalRecord(primaryKeyMetas, columnsMetas);
+        if (records.isEmpty()) {
+            setStatus(ExtractStatus.CATCH_UP);
+            tracer.update(context.getTableMeta().getFullName(), ProgressStatus.SUCCESS);
+            try {
+                Thread.sleep(noUpdateSleepTimeSecond * 1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();// 传递下去
             }
-            Map<String, ColumnValue> columnMap = parseCanalRowDataList2ColumnValueMap(effectsColumns);
+        }
+        log.info("size: {}, processed ids: {}", records.size(), Joiner.on(",").join(records.stream()
+                .map(x -> Joiner.on("+").join(x.getPrimaryKeys().stream()
+                        .map(x1 -> x1.getValue().toString()).collect(Collectors.toList()))).collect(Collectors.toList())));
 
-            for (ColumnMeta primaryKey : primaryKeyMetas) {
-              if (!columnMap.containsKey(primaryKey.getName())) {
-                logger.error("binlog pk should not be empty, column: {}", primaryKey.getName());
-              }
-              ColumnValue columnValue = columnMap.get(primaryKey.getName());
-              primaryKeys.add(columnValue);
+        return (List<Record>) (List<? extends Record>) records;
+    }
+
+    private List<IncrementRecord> fetchCanalRecord(List<ColumnMeta> primaryKeyMetas,
+                                                   List<ColumnMeta> columnsMetas) {
+        Pipeline pipelined = redisClient.pipelined();
+        List<Response<byte[]>> entryStringListResponses = Lists.newArrayList();
+        batchQuery = 100;
+        IntStream.range(0, batchQuery).forEach(x ->
+                entryStringListResponses.add(pipelined.lpop((this.schemaName + "." + this.tableName).getBytes())));
+        pipelined.sync();
+        List<byte[]> rowDataStrings = entryStringListResponses.stream().map(Response::get)
+                .filter(Objects::nonNull).collect(Collectors.toList());
+        if (rowDataStrings.isEmpty()) {
+            return ImmutableList.of();
+        }
+
+        return rowDataStrings.stream().map(x -> {
+            try {
+                return CanalEntry.Entry.parseFrom(ByteString.copyFrom(x));
+            } catch (InvalidProtocolBufferException e) {
+                throw new YuGongException(e);
             }
-            for (ColumnMeta columnMeta : columnsMetas) {
-              if (!columnMap.containsKey(columnMeta.getName())) {
-                logger.error("binlog column should not be empty, column: {}", columnMeta.getName());
-              }
-              ColumnValue columnValue = columnMap.get(columnMeta.getName());
-              columnValues.add(columnValue);
-            }
-
-            Optional<IncrementOpType> operation = IncrementOpType.ofMysqlCancal(
-                entry.getHeader().getEventType());
-
-            return new IncrementRecord(
-                context.getTableMeta().getSchema(),
-                context.getTableMeta().getName(), primaryKeys, columnValues, operation.get());
-
-          }).collect(Collectors.toList());
         })
-        .flatMap(Collection::stream)
-        .collect(Collectors.toList());
-  }
-  
-  private Map<String, ColumnValue> parseCanalRowDataList2ColumnValueMap(
-      List<CanalEntry.Column> columns) {
-    return columns.stream().map(column -> {
-      ColumnMeta columnMeta = new ColumnMeta(column.getName(), column.getSqlType());
-      Object value = SqlUtils.stringToSqlValue(column.getValue(), columnMeta.getType(),
-          false, false);
-      return new ColumnValue(columnMeta, value);
-    }).collect(Collectors.toMap(x -> x.getColumn().getName(), Function.identity()));
-  }
+                .map((CanalEntry.Entry entry) -> {
+                    CanalEntry.RowChange rowChange;
+                    try {
+                        rowChange = CanalEntry.RowChange.parseFrom(entry.getStoreValue());
+                    } catch (InvalidProtocolBufferException e) {
+                        log.error("parse entry failed, entry offset: {}", entry.getHeader().getLogfileOffset());
+                        throw new YuGongException("parse entry failed, stopped");
+                    }
+                    List<CanalEntry.RowData> rows = rowChange.getRowDatasList();
+                    // one entry contains multi row changes
+                    return rows.stream().map(rowData -> {
+                        List<ColumnValue> columnValues = Lists.newArrayList();
+                        List<ColumnValue> primaryKeys = Lists.newArrayList();
+                        List<CanalEntry.Column> effectsColumns;
+                        if (entry.getHeader().getEventType() == CanalEntry.EventType.INSERT ||
+                                entry.getHeader().getEventType() == CanalEntry.EventType.UPDATE) {
+                            effectsColumns = rowData.getAfterColumnsList();
+                        } else { // DELETE
+                            effectsColumns = rowData.getBeforeColumnsList();
+                        }
+                        Map<String, ColumnValue> columnMap = parseCanalRowDataList2ColumnValueMap(effectsColumns);
 
-  @Override
-  public Position ack(List<Record> records) {
-    return null;
-  }
+                        for (ColumnMeta primaryKey : primaryKeyMetas) {
+                            if (!columnMap.containsKey(primaryKey.getName())) {
+                                log.error("binlog pk should not be empty, column: {}", primaryKey.getName());
+                            }
+                            ColumnValue columnValue = columnMap.get(primaryKey.getName());
+                            primaryKeys.add(columnValue);
+                        }
+                        for (ColumnMeta columnMeta : columnsMetas) {
+                            if (!columnMap.containsKey(columnMeta.getName())) {
+                                log.error("binlog column should not be empty, column: {}", columnMeta.getName());
+                            }
+                            ColumnValue columnValue = columnMap.get(columnMeta.getName());
+                            columnValues.add(columnValue);
+                        }
 
-  @Override
-  public void stop() {
-    super.stop();
-    tracer.update(context.getTableMeta().getFullName(), ProgressStatus.SUCCESS);
-  }
+                        Optional<IncrementOpType> operation = IncrementOpType.ofMysqlCancal(
+                                entry.getHeader().getEventType());
+
+                        return new IncrementRecord(
+                                context.getTableMeta().getSchema(),
+                                context.getTableMeta().getName(), primaryKeys, columnValues, operation.get());
+
+                    }).collect(Collectors.toList());
+                })
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+    }
+
+    private Map<String, ColumnValue> parseCanalRowDataList2ColumnValueMap(
+            List<CanalEntry.Column> columns) {
+        return columns.stream().map(column -> {
+            ColumnMeta columnMeta = new ColumnMeta(column.getName(), column.getSqlType());
+            Object value = SqlUtils.stringToSqlValue(column.getValue(), columnMeta.getType(),
+                    false, false);
+            return new ColumnValue(columnMeta, value);
+        }).collect(Collectors.toMap(x -> x.getColumn().getName(), Function.identity()));
+    }
+
+    @Override
+    public Position ack(List<Record> records) {
+        return null;
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+        tracer.update(context.getTableMeta().getFullName(), ProgressStatus.SUCCESS);
+    }
 
 }

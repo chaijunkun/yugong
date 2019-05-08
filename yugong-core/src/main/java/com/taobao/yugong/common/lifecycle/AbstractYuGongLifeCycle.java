@@ -1,5 +1,6 @@
 package com.taobao.yugong.common.lifecycle;
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,9 +10,8 @@ import org.slf4j.LoggerFactory;
  * @author agapple 2014年2月25日 下午11:38:06
  * @since 1.0.0
  */
+@Slf4j
 public abstract class AbstractYuGongLifeCycle implements YuGongLifeCycle {
-
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   /** 是否处于运行中 */
   protected volatile boolean running = false;
@@ -41,7 +41,7 @@ public abstract class AbstractYuGongLifeCycle implements YuGongLifeCycle {
 
   @Override
   public void abort(String why, Throwable e) {
-    logger.error("abort caused by " + why, e);
+    log.error("abort caused by " + why, e);
     stop();
   }
 
