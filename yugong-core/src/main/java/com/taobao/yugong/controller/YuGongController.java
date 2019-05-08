@@ -19,10 +19,7 @@ import com.taobao.yugong.common.db.meta.ColumnMeta;
 import com.taobao.yugong.common.db.meta.Table;
 import com.taobao.yugong.common.db.meta.TableMetaGenerator;
 import com.taobao.yugong.common.lifecycle.AbstractYuGongLifeCycle;
-import com.taobao.yugong.common.model.DataSourceConfig;
-import com.taobao.yugong.common.model.DbType;
-import com.taobao.yugong.common.model.RunMode;
-import com.taobao.yugong.common.model.YuGongContext;
+import com.taobao.yugong.common.model.*;
 import com.taobao.yugong.common.stats.ProgressTracer;
 import com.taobao.yugong.common.stats.StatAggregation;
 import com.taobao.yugong.common.utils.LikeUtil;
@@ -595,7 +592,7 @@ public class YuGongController extends AbstractYuGongLifeCycle {
   private YuGongContext initGlobalContext() {
     YuGongContext context = new YuGongContext();
     logger.info("check source database connection ...");
-    context.setSourceDs(initDataSource("source"));
+    context.setSourceDs(initDataSource(DataSourceType.source));
     logger.info("check source database is ok");
 
     // if (targetDbType.isOracle() && runMode.isAll()) {
@@ -603,7 +600,7 @@ public class YuGongController extends AbstractYuGongLifeCycle {
     // }
 
     logger.info("check target database connection ...");
-    context.setTargetDs(initDataSource("target"));
+    context.setTargetDs(initDataSource(DataSourceType.target));
     logger.info("check target database is ok");
     context.setSourceEncoding(config.getString("yugong.database.source.encode", "UTF-8"));
     context.setTargetEncoding(config.getString("yugong.database.target.encode", "UTF-8"));
@@ -616,13 +613,13 @@ public class YuGongController extends AbstractYuGongLifeCycle {
     return context;
   }
 
-  private DataSource initDataSource(String type) {
-    String username = config.getString("yugong.database." + type + ".username");
-    String password = config.getString("yugong.database." + type + ".password");
-    DbType dbType = DbType.getTypeIgnoreCase(config.getString("yugong.database." + type + ".type"));
-    String url = config.getString("yugong.database." + type + ".url");
-    String encode = config.getString("yugong.database." + type + ".encode");
-    String poolSize = config.getString("yugong.database." + type + ".poolSize");
+  private DataSource initDataSource(DataSourceType type) {
+    String username = config.getString(String.format("yugong.database.%s.username", type.getConfigKey()));
+    String password = config.getString(String.format("yugong.database.%s.password", type.getConfigKey()));
+    DbType dbType = DbType.getTypeIgnoreCase(config.getString(String.format("yugong.database.%s.type", type.getConfigKey())));
+    String url = config.getString(String.format("yugong.database.%s.url", type.getConfigKey()));
+    String encode = config.getString(String.format("yugong.database.%s.encode", type.getConfigKey()));
+    String poolSize = config.getString(String.format("yugong.database.%s.poolSize", type.getConfigKey()));
 
     Properties properties = new Properties();
     if (poolSize != null) {
@@ -630,12 +627,12 @@ public class YuGongController extends AbstractYuGongLifeCycle {
     } else {
       properties.setProperty("maxActive", "200");
     }
-    if (dbType.isMysql()) {  // mysql的编码直接交给驱动去做
+    // mysql的编码直接交给驱动去做
+    if (dbType.isMysql()) {
       properties.setProperty("characterEncoding", encode);
     }
 
-    DataSourceConfig dsConfig = new DataSourceConfig(url, username, password, dbType, properties);
-    return dataSourceFactory.getDataSource(dsConfig);
+    return dataSourceFactory.getDataSource(url, username, password, dbType, properties);
   }
 
   private Collection<TableHolder> initTables() {
