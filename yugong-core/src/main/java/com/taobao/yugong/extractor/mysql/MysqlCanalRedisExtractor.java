@@ -41,7 +41,7 @@ import java.util.stream.IntStream;
  * @author dijingchao
  */
 @Slf4j
-public class MysqlCanalRedisExtractor extends AbstractSqlServerExtractor {
+public class MysqlCanalRedisExtractor extends AbstractMysqlExtractor {
 
     private final String schemaName;
     private final String tableName;

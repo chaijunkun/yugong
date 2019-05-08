@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  * @author dijingchao
  */
 @Slf4j
-public class MysqlCanalExtractor extends AbstractSqlServerExtractor {
+public class MysqlCanalExtractor extends AbstractMysqlExtractor {
 
     private final String schemaName;
     private final String tableName;
