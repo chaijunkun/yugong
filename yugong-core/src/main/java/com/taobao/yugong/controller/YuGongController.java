@@ -80,7 +80,10 @@ public class YuGongController extends AbstractYuGongLifeCycle {
     private Configuration config;
     private YugongConfiguration yugongConfiguration;
 
-    private RunMode runMode; // 下运行模式
+    /**
+     * 运行模式
+     */
+    private RunMode runMode;
     private YuGongContext globalContext;
     private DbType sourceDbType = DbType.ORACLE;
     private DbType targetDbType = DbType.MYSQL;
@@ -92,9 +95,11 @@ public class YuGongController extends AbstractYuGongLifeCycle {
     private ProgressTracer progressTracer;
     private List<YuGongInstance> instances = Lists.newArrayList();
     private ScheduledExecutorService schedule;
-    // 全局的工作线程池
-    private ThreadPoolExecutor extractorExecutor = null;
-    private ThreadPoolExecutor applierExecutor = null;
+    /**
+     * 全局的工作线程池
+     */
+    private ThreadPoolExecutor extractorExecutor;
+    private ThreadPoolExecutor applierExecutor;
     private boolean onceFull;
     private boolean extractorDump;
     private boolean applierDump;
@@ -104,7 +109,9 @@ public class YuGongController extends AbstractYuGongLifeCycle {
     private String alarmReceiver;
     private int retryTimes;
     private int retryInterval;
-    //忽略源表pk检查的表
+    /**
+     * 忽略源表pk检查的表
+     */
     private String[] ignorePkInspection;
 
     public YuGongController(Configuration config, YugongConfiguration yugongConfiguration) {
@@ -147,17 +154,19 @@ public class YuGongController extends AbstractYuGongLifeCycle {
         this.globalContext = initGlobalContext();
 
         Collection<TableHolder> tableMetas = initTables();
-        int threadSize = 1; // 默认1，代表串行
+        // 默认1，代表串行
+        int threadSize = 1;
         if (concurrent) {
-            threadSize = config.getInt("yugong.table.concurrent.size", 5); // 并行执行的table数
-
+            // 并行执行的table数
+            threadSize = config.getInt("yugong.table.concurrent.size", 5);
         }
 
         tableController = new TableController(tableMetas.size(), threadSize);
         progressTracer = new ProgressTracer(runMode, tableMetas.size());
 
         int noUpdateThresoldDefault = -1;
-        if (threadSize < tableMetas.size()) { // 如果是非一次性并发跑，默认为3次noUpdate
+        // 如果是非一次性并发跑，默认为3次noUpdate
+        if (threadSize < tableMetas.size()) {
             noUpdateThresoldDefault = 3;
         }
         int noUpdateThresold = config.getInt("yugong.extractor.noupdate.thresold",
@@ -465,7 +474,8 @@ public class YuGongController extends AbstractYuGongLifeCycle {
                 return new CheckRecordApplier(context);
             }
         } else {
-            return new FullRecordApplier(context);// 其他情况返回一个full
+            // 其他情况返回一个full
+            return new FullRecordApplier(context);
         }
     }
 
@@ -586,7 +596,8 @@ public class YuGongController extends AbstractYuGongLifeCycle {
                                        boolean ignoreSchema) {
         YuGongContext result = globalContext.cloneGlobalContext();
         result.setTableMeta(table);
-        if (ignoreSchema) {  // 自动识别table是否为无shcema定义
+        // 自动识别table是否为无shcema定义
+        if (ignoreSchema) {
             result.setIgnoreSchema(ignoreSchema);
         }
         return result;
@@ -864,7 +875,8 @@ public class YuGongController extends AbstractYuGongLifeCycle {
     private void processException(Table table, Exception exception) {
         MDC.remove(YuGongConstants.MDC_TABLE_SHIT_KEY);
         abort("process table[" + table.getFullName() + "] has error!", exception);
-        System.exit(-1);// 串行时，出错了直接退出jvm
+        // 串行时，出错了直接退出jvm
+        System.exit(-1);
     }
 
     /**
